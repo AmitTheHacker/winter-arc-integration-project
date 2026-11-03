@@ -1,0 +1,34 @@
+services:
+  app:
+    build: ./app # Path to application Dockerfile
+
+    ports:
+      - "8080:3000" # Host_Port:Container_Port
+
+    environment:
+      DB_HOST: db # Use service name instead of localhost
+      DB_PORT: 5432
+
+    depends_on:
+      db:
+        condition: service_healthy # Wait until database is fully ready
+
+  db:
+    image: postgres:16-alpine
+
+    environment:
+      POSTGRES_DB: appdb
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} # Load password from .env
+
+    volumes:
+      - db_data:/var/lib/postgresql/data # Persist database data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U appuser -d appdb"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  db_data: # Named volume for PostgreSQL data persistence
